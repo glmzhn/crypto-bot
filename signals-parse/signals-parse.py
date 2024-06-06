@@ -1,9 +1,9 @@
+from client import TVCSClient
+from place_order import buy_or_sell
 import json
 
-from client import TVCSClient
 
-
-def main():
+def get_signal():
 
     client = TVCSClient()
 
@@ -20,6 +20,14 @@ def main():
         with open('signals.json', 'w') as f:
             json.dump(signals, f, indent=4)
 
+        buy_or_sell(
+            category='spot',
+            symbol=signal['pair'],
+            side=signal['recommendation'].lower(),
+            ordertype='Market',
+            qty=1
+        )
+
 
 if __name__ == "__main__":
-    main()
+    get_signal()
