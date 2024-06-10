@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 import logging
-from place_order import check_balance
+from place_order import check_balance, get_open_orders
+from signals_parse import get_signal
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s] - %(name)s - "
@@ -44,24 +45,33 @@ async def get_id(message: Message, state: FSMContext):
     await message.answer('Успех!')
 
 
-@dp.message(Command('check_balance'))
-async def check_wallet(message: Message, state: FSMContext):
+@dp.message(Command('set_account'))
+async def set_account(message: Message, state: FSMContext):
     await message.answer("Введите тип аккаунта!")
     await state.set_state(TypeSteps.GET_TYPE)
 
 
 @dp.message(TypeSteps.GET_TYPE)
 async def get_type(message: Message, state: FSMContext):
-    await message.answer('Получил тип аккаунта, выполняю... \U0001F680')
     account = message.text
-    if account == 'UNIFIED' or 'CONTRACT' or 'SPOT':
-        totalwalletbalance, coin_type, availablebalance = check_balance(account)
-        await state.update_data(account=account)
-        await state.clear()
-        await message.answer(f'Ваш баланс: {totalwalletbalance} | {coin_type} \U0001F4B3\n'
-                             f'Доступные средства: {availablebalance} \U0001F4B8')
+    if account in ['UNIFIED', 'CONTRACT']:
+        with open('account.txt', 'w', encoding='utf-8') as f:
+            f.write(account)
+            await message.answer('Благодарю, тип аккаунта записан \U0001F60A')
     else:
-        await message.answer('Введите один из типов аккаунта: UNIFIED, CONTRACT, SPOT!')
+        await message.answer('Неверно!\n'
+                             'Введите один из типов аккаунта: UNIFIED, CONTRACT! \U000026A0')
+    await state.update_data(account=account)
+    await state.clear()
+
+
+@dp.message(Command('check_balance'))
+async def check_wallet(message: Message):
+    with open('account.txt', 'r', encoding='utf-8') as f:
+        account = f.read().strip()
+    totalwalletbalance, coin_type, availablebalance = check_balance(account)
+    await message.answer(f'Ваш баланс: {totalwalletbalance} | {coin_type} \U0001F4B3\n'
+                         f'Доступные средства: {availablebalance} \U0001F4B8')
 
 
 @dp.message(Command('order_status'))
@@ -76,6 +86,18 @@ async def order_status(message: Message):
 @dp.message(Command('trading_info'))
 async def trading_info(message: Message):
     await message.answer("Успешно! Получение информации о торговле...")
+
+
+@dp.message(Command('buy_or_sell'))
+async def buy_or_sell(message: Message):
+    await message.answer('Анализирую рекомендации... \U0001F50D')
+    await get_signal(message)
+
+
+@dp.message(Command('get_open_orders'))
+async def buy_or_sell(message: Message):
+    await message.answer('Получаю открытые заказы... \U0001F4A1')
+    get_open_orders('spot')
 
 
 async def main():

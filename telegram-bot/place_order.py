@@ -21,7 +21,7 @@ client = HTTP(
 
 
 # | Function to place the order for buying or selling |
-def buy_or_sell(category, symbol, side, ordertype, qty):
+def buy_or_sell(category, symbol, side, ordertype, qty, marketunit):
     try:
         balance = client.place_order(
             category=category,  # | One of them: linear, inverse, option, spot |
@@ -29,8 +29,9 @@ def buy_or_sell(category, symbol, side, ordertype, qty):
             side=side,  # | Buy or Sell |
             orderType=ordertype,  # | One of them: Market, Limit |
             qty=qty,  # | Count of coins |
+            marketUnit=marketunit
         )
-        print(balance)
+        return balance
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
@@ -49,7 +50,7 @@ def check_balance(accounttype):
         # | accountType can be one of them: UNIFIED, CONTRACT, SPOT |
         balance = client.get_wallet_balance(accountType=accounttype)
         wallet.append(balance)
-        with open('../signals-parse/wallet.json', 'w') as f:
+        with open('../outcome_data/wallet.json', 'w') as f:
             json.dump(balance, f, indent=4)
             coin_info = balance['result']['list'][0]['coin'][0]['coin']
             totalavailablebalance = balance['result']['list'][0]['totalAvailableBalance']
@@ -78,3 +79,29 @@ def cancel_order(category, symbol, orderid):
         print("Request failed. Error:", e.status_code, e.message)
     except Exception as e:
         print(e)
+
+
+def get_open_orders(category):
+    try:
+        client.get_open_orders(
+            category=category,  # | One of them: linear, inverse, option, spot |
+        )
+    # | Exceptions messages |
+    except exceptions.InvalidRequestError as e:
+        print(e.status_code, e.message, sep=' | ')
+    except exceptions.FailedRequestError as e:
+        print("Request failed. Error:", e.status_code, e.message)
+    except Exception as e:
+        print(e)
+
+
+if __name__ == '__main__':
+    r = buy_or_sell(
+        category='spot',
+        symbol='SOLUSDT',
+        side='SELL',
+        ordertype='Market',
+        qty=10,
+        marketunit='quoteCoin'
+    )
+    print(r)
