@@ -45,10 +45,10 @@ wallet = []
 
 
 # | Function to check balance of the wallet |
-def check_balance(accounttype):
+def check_balance(accounttype, coin):
     try:
         # | accountType can be one of them: UNIFIED, CONTRACT, SPOT |
-        balance = client.get_wallet_balance(accountType=accounttype)
+        balance = client.get_wallet_balance(accountType=accounttype, coin=coin)
         wallet.append(balance)
         with open('../outcome_data/wallet.json', 'w') as f:
             json.dump(balance, f, indent=4)
@@ -81,11 +81,14 @@ def cancel_order(category, symbol, orderid):
         print(e)
 
 
-def get_open_orders(category):
+def get_open_orders(category, symbol):
     try:
-        client.get_open_orders(
+        c = client.get_open_orders(
             category=category,  # | One of them: linear, inverse, option, spot |
+            symbol=symbol,
+            #  orderid=orderid,
         )
+        return c
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
@@ -96,12 +99,4 @@ def get_open_orders(category):
 
 
 if __name__ == '__main__':
-    r = buy_or_sell(
-        category='spot',
-        symbol='SOLUSDT',
-        side='SELL',
-        ordertype='Market',
-        qty=10,
-        marketunit='quoteCoin'
-    )
-    print(r)
+    check_balance(accounttype='UNIFIED')

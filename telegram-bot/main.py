@@ -1,4 +1,6 @@
 import asyncio
+import time
+import sqlite3
 from aiogram import Bot, Dispatcher
 import os
 from core.utils.statesform import StepsForm, TypeSteps
@@ -18,6 +20,10 @@ load_dotenv()
 
 bot = Bot(token=os.environ['BOT_TOKEN'])
 dp = Dispatcher()
+
+conn = sqlite3.connect('accounts.db')
+
+cur = conn.cursor()
 
 
 @dp.message(CommandStart())
@@ -47,31 +53,46 @@ async def get_id(message: Message, state: FSMContext):
 
 @dp.message(Command('set_account'))
 async def set_account(message: Message, state: FSMContext):
-    await message.answer("Введите тип аккаунта!")
+    await message.answer("Введите тип аккаунта и валюту!\n"
+                         "Пример: UNIFIED,USDT\n"
+                         "БЕЗ ПРОБЕЛОВ!")
     await state.set_state(TypeSteps.GET_TYPE)
 
 
 @dp.message(TypeSteps.GET_TYPE)
 async def get_type(message: Message, state: FSMContext):
-    account = message.text
-    if account in ['UNIFIED', 'CONTRACT']:
-        with open('account.txt', 'w', encoding='utf-8') as f:
-            f.write(account)
-            await message.answer('Благодарю, тип аккаунта записан \U0001F60A')
-    else:
-        await message.answer('Неверно!\n'
-                             'Введите один из типов аккаунта: UNIFIED, CONTRACT! \U000026A0')
-    await state.update_data(account=account)
+    account = message.text.split(',')
+    account = account[0]
+    currency = account[1]
+
+    user_id = message.from_user.id
+
+    cur.execute(
+        "INSERT INTO user_account (user_id, account, currency) VALUES (?, ?, ?)",
+        (user_id, account, currency)
+    )
+
+    conn.commit()
+    await message.answer('Благодарю за предоставленные данные!')
     await state.clear()
 
 
 @dp.message(Command('check_balance'))
 async def check_wallet(message: Message):
-    with open('account.txt', 'r', encoding='utf-8') as f:
-        account = f.read().strip()
-    totalwalletbalance, coin_type, availablebalance = check_balance(account)
-    await message.answer(f'Ваш баланс: {totalwalletbalance} | {coin_type} \U0001F4B3\n'
-                         f'Доступные средства: {availablebalance} \U0001F4B8')
+    user_id = message.from_user.id
+
+    cur.execute("SELECT account, currency FROM user_account WHERE user_id = ?", (user_id,))
+    result = cur.fetchone()
+    conn.close()
+
+    if result is not None:
+        account, currency = result
+        if account in ['UNIFIED', 'CONTRACT']:
+            totalwalletbalance, coin_type, availablebalance = check_balance(account, currency)
+            await message.answer(f'Ваш баланс: {totalwalletbalance} | {coin_type} \U0001F4B3\n'
+                                 f'Доступные средства: {availablebalance} \U0001F4B8')
+    else:
+        await message.answer('В базе данных нет вашего id, вызовите команду set_account и повторите попытку!')
 
 
 @dp.message(Command('order_status'))
@@ -91,13 +112,14 @@ async def trading_info(message: Message):
 @dp.message(Command('buy_or_sell'))
 async def buy_or_sell(message: Message):
     await message.answer('Анализирую рекомендации... \U0001F50D')
+    time.sleep(3)
     await get_signal(message)
 
 
 @dp.message(Command('get_open_orders'))
-async def buy_or_sell(message: Message):
+async def get_open_ords(message: Message):
     await message.answer('Получаю открытые заказы... \U0001F4A1')
-    get_open_orders('spot')
+    get_open_orders('linear', 'BTCUSDT')
 
 
 async def main():

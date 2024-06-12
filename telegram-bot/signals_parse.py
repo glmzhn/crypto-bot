@@ -1,3 +1,5 @@
+import datetime
+
 from aiogram.types import Message
 from pybit import exceptions
 from pybit.unified_trading import HTTP
@@ -50,34 +52,39 @@ async def get_signal(message: Message):
                 print(r)
 
                 if r['retMsg'] == 'OK':
+                    time = r['time'] / 1000
+                    dt_object = datetime.datetime.fromtimestamp(time)
                     await message.answer(f"Покупка успешно произведена! \U00002705\n"
                                          f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                         f"Время: {r['time']} \U0000231A")
+                                         f"Время: {dt_object} \U0000231A")
                 else:
                     await message.answer('Покупка не была произведена, произошла ошибка \U0000274C')
 
             elif signal['recommendation'] == 'STRONG_SELL':
                 with open('account.txt', 'r', encoding='utf-8') as f:
                     account = f.read().strip()
-                totalwalletbalance, availablebalance = check_balance(account)
-                r = app.place_order(
-                    category='linear',
-                    symbol=signal['pair'],
-                    side='Sell',
-                    orderType='Market',
-                    qty=0.001,
-                    marketunit='quoteCoin'
-                )
+                totalwalletbalance, coin_type, availablebalance = check_balance(account)
 
-                if availablebalance == totalwalletbalance:
-                    await message.answer('Нет доступных монет для продажи \U000026D4')
-
-                elif r['retMsg'] == 'OK':
-                    await message.answer(f"Продажа успешно произведена! \U00002705\n"
-                                         f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                         f"Время: {r['time']} \U0000231A")
+                if totalwalletbalance == availablebalance:
+                    print('Нет доступных монет для покупки')
                 else:
-                    await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
+                    r = app.place_order(
+                        category='linear',
+                        symbol=signal['pair'],
+                        side='Sell',
+                        orderType='Market',
+                        qty=0.001,
+                        marketunit='quoteCoin'
+                    )
+
+                    if r['retMsg'] == 'OK':
+                        time = r['time'] / 1000
+                        dt_object = datetime.datetime.fromtimestamp(time)
+                        await message.answer(f"Продажа успешно произведена! \U00002705\n"
+                                             f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                             f"Время: {dt_object} \U0000231A")
+                    else:
+                        await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
 
             elif signal['recommendation'] == 'NEUTRAL':
                 print('Recommendation was neutral')
@@ -96,40 +103,44 @@ async def get_signal(message: Message):
                 print(r)
 
                 if r['retMsg'] == 'OK':
+                    time = r['time'] / 1000
+                    dt_object = datetime.datetime.fromtimestamp(time)
                     await message.answer(f"Покупка успешно произведена! \U00002705\n"
                                          f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                         f"Время: {r['time']} \U0000231A")
+                                         f"Время: {dt_object} \U0000231A")
                 else:
                     await message.answer('Покупка не была произведена, произошла ошибка \U0000274C')
 
             elif signal['recommendation'] == 'SELL':
                 with open('account.txt', 'r', encoding='utf-8') as f:
                     account = f.read().strip()
-                totalwalletbalance, availablebalance, coin_type = check_balance(account)
-                r = app.place_order(
-                    category='linear',
-                    symbol=signal['pair'],
-                    side='Sell',
-                    orderType='Market',
-                    qty=0.001,
-                    marketunit='quoteCoin'
-                )
-
-                if availablebalance == totalwalletbalance:
-                    await message.answer('Нет доступных монет для продажи \U000026D4')
-
-                elif r['retMsg'] == 'OK':
-                    await message.answer(f"Продажа успешно произведена! \U00002705\n"
-                                         f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                         f"Время: {r['time']} \U0000231A")
+                totalwalletbalance, coin_type, availablebalance = check_balance(account)
+                if totalwalletbalance == availablebalance:
+                    print('Нет доступных монет для покупки')
                 else:
-                    await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
+                    r = app.place_order(
+                        category='linear',
+                        symbol=signal['pair'],
+                        side='Sell',
+                        orderType='Market',
+                        qty=0.001,
+                        marketunit='quoteCoin'
+                    )
+
+                    if r['retMsg'] == 'OK':
+                        time = r['time'] / 1000
+                        dt_object = datetime.datetime.fromtimestamp(time)
+                        await message.answer(f"Продажа успешно произведена! \U00002705\n"
+                                             f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                             f"Время: {dt_object} \U0000231A")
+                    else:
+                        await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
 
         # | Exceptions messages |
         except exceptions.InvalidRequestError as e:
             print(e.status_code, e.message, sep=' | ')
             if e.status_code == 110007:
-                await message.answer('Недостаточно свободных средств! \U0000274C\U0001F4B0')
+                await message.answer('Недостаточно свободных средств для покупки! \U0000274C\U0001F4B0')
         except exceptions.FailedRequestError as e:
             print("Request failed. Error:", e.status_code, e.message)
         except Exception as e:
