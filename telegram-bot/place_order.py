@@ -41,21 +41,16 @@ def buy_or_sell(category, symbol, side, ordertype, qty, marketunit):
         print(e)
 
 
-wallet = []
-
-
 # | Function to check balance of the wallet |
-def check_balance(accounttype, coin):
+def check_balance(accounttype):
     try:
         # | accountType can be one of them: UNIFIED, CONTRACT, SPOT |
-        balance = client.get_wallet_balance(accountType=accounttype, coin=coin)
-        wallet.append(balance)
+        balance = client.get_wallet_balance(accountType=accounttype)
         with open('../outcome_data/wallet.json', 'w') as f:
             json.dump(balance, f, indent=4)
-            coin_info = balance['result']['list'][0]['coin'][0]['coin']
             totalavailablebalance = balance['result']['list'][0]['totalAvailableBalance']
             amount = balance['result']['list'][0]['totalWalletBalance']
-            return amount, coin_info, totalavailablebalance
+            return amount, totalavailablebalance
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
@@ -67,26 +62,10 @@ def check_balance(accounttype, coin):
 
 def cancel_order(category, symbol, orderid):
     try:
-        client.cancel_order(
+        c = client.cancel_order(
             category=category,  # | One of them: linear, inverse, option, spot |
             symbol=symbol,  # | Example: BTCUSDT, SOLUSDT, ETHUSDT |
             orderid=orderid,  # | Order's id |
-        )
-    # | Exceptions messages |
-    except exceptions.InvalidRequestError as e:
-        print(e.status_code, e.message, sep=' | ')
-    except exceptions.FailedRequestError as e:
-        print("Request failed. Error:", e.status_code, e.message)
-    except Exception as e:
-        print(e)
-
-
-def get_open_orders(category, symbol):
-    try:
-        c = client.get_open_orders(
-            category=category,  # | One of them: linear, inverse, option, spot |
-            symbol=symbol,
-            #  orderid=orderid,
         )
         return c
     # | Exceptions messages |
@@ -98,5 +77,25 @@ def get_open_orders(category, symbol):
         print(e)
 
 
+def get_single_order(category, symbol):
+    try:
+        c = client.get_open_orders(
+            category=category,  # | One of them: linear, inverse, option, spot |
+            symbol=symbol,
+            openOnly=2,
+        )
+        with open('../outcome_data/order.json', 'w') as f:
+            json.dump(c, f, indent=4)
+        return c
+    # | Exceptions messages |
+    except exceptions.InvalidRequestError as e:
+        print(e.status_code, e.message, sep=' | ')
+    except exceptions.FailedRequestError as e:
+        print("Request failed. Error:", e.status_code, e.message)
+    except Exception as e:
+        print(e)
+
+
 if __name__ == '__main__':
-    check_balance(accounttype='UNIFIED')
+    # get_single_order('linear', 'BTCUSDT')
+    cancel_order('linear', 'BTCUSDT', '0037d60f-674c-426b-a021-0d2c6b7bb872')

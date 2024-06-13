@@ -6,9 +6,8 @@ cur = conn.cursor()
 
 cur.execute("""
     CREATE TABLE user_account (
-        user_id INT,
-        account VARCHAR(255),
-        currency VARCHAR(255)
+        user_id INTEGER PRIMARY KEY,
+        account VARCHAR(255)
     )
 """)
 
