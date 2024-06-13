@@ -3,7 +3,7 @@ import sqlite3
 from aiogram.types import Message
 from pybit import exceptions
 from pybit.unified_trading import HTTP
-from place_order import get_single_order
+from place_order import get_orders
 from client import TVCSClient
 import json
 from place_order import check_balance
@@ -63,7 +63,7 @@ async def get_signal(message: Message):
                 if r['retMsg'] == 'OK':
                     time = r['time'] / 1000
                     dt_object = datetime.datetime.fromtimestamp(time)
-                    order_status = get_single_order('linear', 'BTCUSDT', orderid=r['result']['orderId'])
+                    order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                     if order_status['result']['list']['orderStatus'] == 'Filled':
                         await message.answer(f"Покупка успешно произведена! \U00002705\n"
                                              f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
@@ -91,7 +91,7 @@ async def get_signal(message: Message):
                     if r['retMsg'] == 'OK':
                         time = r['time'] / 1000
                         dt_object = datetime.datetime.fromtimestamp(time)
-                        order_status = get_single_order('linear', 'BTCUSDT', orderid=r['result']['orderId'])
+                        order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                         if order_status['result']['list']['orderStatus'] == 'Filled':
                             await message.answer(f"Продажа успешно произведена! \U00002705\n"
                                                  f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
@@ -118,7 +118,7 @@ async def get_signal(message: Message):
                 if r['retMsg'] == 'OK':
                     time = r['time'] / 1000
                     dt_object = datetime.datetime.fromtimestamp(time)
-                    order_status = get_single_order('linear', 'BTCUSDT', orderid=r['result']['orderId'])
+                    order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                     if order_status['result']['list']['orderStatus'] == 'Filled':
                         await message.answer(f"Покупка успешно произведена! \U00002705\n"
                                              f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
@@ -144,7 +144,7 @@ async def get_signal(message: Message):
                     if r['retMsg'] == 'OK':
                         time = r['time'] / 1000
                         dt_object = datetime.datetime.fromtimestamp(time)
-                        order_status = get_single_order('linear', 'BTCUSDT', orderid=r['result']['orderId'])
+                        order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                         if order_status['result']['list']['orderStatus'] == 'Filled':
                             await message.answer(f"Продажа успешно произведена! \U00002705\n"
                                                  f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"

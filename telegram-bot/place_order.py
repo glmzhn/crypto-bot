@@ -77,16 +77,27 @@ def cancel_order(category, symbol, orderid):
         print(e)
 
 
-def get_single_order(category, symbol):
+def get_orders(category, symbol, orderid=None):
     try:
-        c = client.get_open_orders(
-            category=category,  # | One of them: linear, inverse, option, spot |
-            symbol=symbol,
-            openOnly=2,
-        )
-        with open('../outcome_data/order.json', 'w') as f:
-            json.dump(c, f, indent=4)
-        return c
+        if orderid is None:
+            c = client.get_open_orders(
+                category=category,  # | One of them: linear, inverse, option, spot |
+                symbol=symbol,
+                openOnly=2,
+            )
+            with open('../outcome_data/order.json', 'w') as f:
+                json.dump(c, f, indent=4)
+            return c
+        else:
+            c = client.get_open_orders(
+                category=category,  # | One of them: linear, inverse, option, spot |
+                symbol=symbol,
+                orderId=orderid,
+                openOnly=2,
+            )
+            with open('../outcome_data/order.json', 'w') as f:
+                json.dump(c, f, indent=4)
+            return c
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
@@ -98,4 +109,4 @@ def get_single_order(category, symbol):
 
 if __name__ == '__main__':
     # get_single_order('linear', 'BTCUSDT')
-    cancel_order('linear', 'BTCUSDT', '0037d60f-674c-426b-a021-0d2c6b7bb872')
+    cancel_order('linear', 'BTCUSDT', '6ce2a705-a215-41b0-b758-48b31ce30216')

@@ -2,13 +2,14 @@ import asyncio
 import sqlite3
 from aiogram import Bot, Dispatcher
 import os
+from pybit import exceptions
 from core.utils.statesform import StepsForm
 from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message,FSInputFile
 import logging
-from place_order import check_balance, get_single_order, cancel_order
+from place_order import check_balance, get_orders, cancel_order
 from signals_parse import get_signal
 
 
@@ -38,8 +39,11 @@ async def cmd_start(message: Message):
 @dp.message(Command('help'))
 async def help_command(message: Message):
     await message.answer('Привет, это крипто-бот \U0001F44B\n'
-                         'Все необходимые инструкции ты получишь при вызове команд \U0001F4EB\n'
+                         '\n'
+                         'Все необходимые инструкции будут при вызове команд \U0001F4EB\n'
+                         '\n'
                          "Чтобы получить список команд, нажми на нижнюю левую кнопку 'menu' \U00002199\n"
+                         "\n"
                          'Удачного трейдинга \U0001F340')
 
 
@@ -51,11 +55,19 @@ async def cancel_order(message: Message, state: FSMContext):
 
 @dp.message(StepsForm.GET_ORDER)
 async def cancel(message: Message, state: FSMContext):
-    order_id = message.text
-    if order_id:
-        order = cancel_order('linear', 'BTCUSDT', order_id)
-
-
+    try:
+        order_id = message.text
+        if order_id:
+            order = cancel_order('linear', 'BTCUSDT', order_id)
+            if order['retMsg'] == 'OK':
+                await message.answer(f'Заказ с id - {order_id} успешно отменен \U0001F4E8')
+            elif order['retMsg'] != 'OK':
+                await message.answer('Не удалось отменить заказ, попробуйте снова \U0001F504')
+    except exceptions.InvalidRequestError as e:
+        if e.status_code == 10001:
+            await message.answer('Неверный id ордера!\n'
+                                 'Либо ордер уже исполнен и отмена невозможна')
+        await state.clear()
 
 
 @dp.message(Command('set_account'))
@@ -98,7 +110,7 @@ async def check_wallet(message: Message):
             await message.answer(f'Ваш баланс: {totalwalletbalance} | USDT \U0001F4B3\n'
                                  f'Доступные средства: {availablebalance} \U0001F4B8')
     else:
-        await message.answer('В базе данных нет вашего id, вызовите команду set_account и повторите попытку! \U0001F504')
+        await message.answer('В базе данных нет вашего id, вызовите команду set_account и повторите попытку \U0001F504')
 
 
 @dp.message(Command('order_status'))
@@ -111,7 +123,7 @@ async def order_status(message: Message, state: FSMContext):
 async def get_order_status(message: Message, state: FSMContext):
     order_id = message.text
     if order_id:
-        order = get_single_order('linear', 'BTCUSDT', order_id)
+        order = get_orders('linear', 'BTCUSDT', order_id)
         if order['result']['list'][0]['orderStatus'] == 'Filled':
             await message.answer(f"Получил данные ордера: \U00002139\n"
                                  f" - Валютная пара: {order['result']['list'][0]['symbol']} \U0001F4B1\n"
@@ -129,6 +141,33 @@ async def get_order_status(message: Message, state: FSMContext):
     else:
         await message.answer("Пожалуйста, введите id ордера без пробелов и лишних символов \U0000270F")
     await state.clear()
+
+
+@dp.message(Command('trading_info'))
+async def get_all_orders(message: Message):
+    orders = get_orders('linear', 'BTCUSDT')
+    with open('orders.txt', 'w', encoding='utf-8') as temp_file:
+        for order in orders['result']['list']:
+            if order['orderStatus'] == 'Filled':
+                temp_file.write(f"Получил данные ордера: \n"
+                                f" - Валютная пара: {order['symbol']} \n"
+                                f" - ID Ордера: {order['orderId']} \n"
+                                f" - Цена открытия ордера: {order['price']} \n"
+                                f" - Количество купленной монеты: {order['qty']} \n"
+                                f" - Статус ордера: Исполнен \n"
+                                f"\n")
+            else:
+                temp_file.write(f"Получил данные ордера: \n"
+                                f" - Валютная пара: {order['symbol']} \n"
+                                f" - ID Ордера: {order['orderId']} \n"
+                                f" - Цена открытия ордера: {order['price']} \n"
+                                f" - Количество купленной монеты: {order['qty']} \n"
+                                f" - Статус ордера: Не исполнен\n"
+                                f"\n")
+    file = FSInputFile(path='C:/Users/galym/projects/crypto-bot/telegram-bot/orders.txt', filename='orders.txt')
+    await message.answer_document(document=file, caption='Список всех ордеров')
+
+    os.remove('orders.txt')
 
 
 @dp.message(Command('buy_or_sell'))
