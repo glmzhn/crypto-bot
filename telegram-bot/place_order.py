@@ -1,6 +1,4 @@
-import json
 import logging
-
 from pybit import exceptions
 from pybit.unified_trading import HTTP
 
@@ -46,11 +44,9 @@ def check_balance(accounttype):
     try:
         # | accountType can be one of them: UNIFIED, CONTRACT, SPOT |
         balance = client.get_wallet_balance(accountType=accounttype)
-        with open('../outcome_data/wallet.json', 'w') as f:
-            json.dump(balance, f, indent=4)
-            totalavailablebalance = balance['result']['list'][0]['totalAvailableBalance']
-            amount = balance['result']['list'][0]['totalWalletBalance']
-            return amount, totalavailablebalance
+        totalavailablebalance = balance['result']['list'][0]['totalAvailableBalance']
+        amount = balance['result']['list'][0]['totalWalletBalance']
+        return amount, totalavailablebalance
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
@@ -60,12 +56,13 @@ def check_balance(accounttype):
         print(e)
 
 
+# | Function to cancel orders |
 def cancel_order(category, symbol, orderid):
     try:
         c = client.cancel_order(
             category=category,  # | One of them: linear, inverse, option, spot |
             symbol=symbol,  # | Example: BTCUSDT, SOLUSDT, ETHUSDT |
-            orderid=orderid,  # | Order's id |
+            orderId=orderid,  # | Order's id |
         )
         return c
     # | Exceptions messages |
@@ -77,26 +74,23 @@ def cancel_order(category, symbol, orderid):
         print(e)
 
 
+# | Function to get all orders or a certain order |
 def get_orders(category, symbol, orderid=None):
     try:
         if orderid is None:
             c = client.get_open_orders(
                 category=category,  # | One of them: linear, inverse, option, spot |
-                symbol=symbol,
-                openOnly=2,
+                symbol=symbol,  # | Example: BTCUSDT, SOLUSDT, ETHUSDT |
+                openOnly=2,  # | 0 - Only active orders, 1 - Orders with final status, 2 - All orders
             )
-            with open('../outcome_data/order.json', 'w') as f:
-                json.dump(c, f, indent=4)
             return c
         else:
             c = client.get_open_orders(
                 category=category,  # | One of them: linear, inverse, option, spot |
-                symbol=symbol,
-                orderId=orderid,
-                openOnly=2,
+                symbol=symbol,  # | Example: BTCUSDT, SOLUSDT, ETHUSDT |
+                orderId=orderid,  # | Order's id |
+                openOnly=2,  # | 0 - Only active orders, 1 - Orders with final status, 2 - All orders
             )
-            with open('../outcome_data/order.json', 'w') as f:
-                json.dump(c, f, indent=4)
             return c
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
@@ -105,8 +99,3 @@ def get_orders(category, symbol, orderid=None):
         print("Request failed. Error:", e.status_code, e.message)
     except Exception as e:
         print(e)
-
-
-if __name__ == '__main__':
-    # get_single_order('linear', 'BTCUSDT')
-    cancel_order('linear', 'BTCUSDT', '6ce2a705-a215-41b0-b758-48b31ce30216')

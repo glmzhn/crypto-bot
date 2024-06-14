@@ -58,7 +58,7 @@ async def cancel(message: Message, state: FSMContext):
     try:
         order_id = message.text
         if order_id:
-            order = cancel_order('linear', 'BTCUSDT', order_id)
+            order = cancel_order(category='linear', symbol='BTCUSDT', orderid=order_id)
             if order['retMsg'] == 'OK':
                 await message.answer(f'Заказ с id - {order_id} успешно отменен \U0001F4E8')
             elif order['retMsg'] != 'OK':
@@ -72,7 +72,7 @@ async def cancel(message: Message, state: FSMContext):
 
 @dp.message(Command('set_account'))
 async def set_account(message: Message, state: FSMContext):
-    await message.answer("Введите тип аккаунта \U0001F4B3\n"
+    await message.answer("Введите тип аккаунта и количество монеты для покупки(не менее 0.001) \U0001F4B3\n"
                          "\n"
                          "Пример: UNIFIED \U0000270F\n"
                          "\n"
@@ -82,13 +82,15 @@ async def set_account(message: Message, state: FSMContext):
 
 @dp.message(StepsForm.GET_TYPE)
 async def get_type(message: Message, state: FSMContext):
-    account = message.text
+    account_qty = message.text.split(',')
+    account = account_qty[0]
+    qty = account_qty[1]
 
     user_id = message.from_user.id
 
     cur.execute(
-        "INSERT OR REPLACE INTO user_account (user_id, account) VALUES (?, ?)",
-        (user_id, account)
+        "INSERT OR REPLACE INTO user_account (user_id, account, qty) VALUES (?, ?, ?)",
+        (user_id, account, qty)
     )
 
     conn.commit()
@@ -177,6 +179,16 @@ async def buy_or_sell(message: Message):
 
 
 async def main():
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_account (
+            user_id INTEGER PRIMARY KEY,
+            account VARCHAR(255),
+            qty INT
+        )
+    """)
+
+    conn.commit()
+
     await dp.start_polling(bot)
     dp.message.register(get_type, StepsForm.GET_TYPE)
     dp.message.register(get_order_status, StepsForm.GET_ID)

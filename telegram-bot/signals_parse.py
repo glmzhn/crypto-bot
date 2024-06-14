@@ -5,7 +5,6 @@ from pybit import exceptions
 from pybit.unified_trading import HTTP
 from place_order import get_orders
 from client import TVCSClient
-import json
 from place_order import check_balance
 
 # | API Keys |
@@ -28,9 +27,10 @@ cur = conn.cursor()
 
 async def get_signal(message: Message):
     user_id = message.from_user.id
-    cur.execute("SELECT account FROM user_account WHERE user_id = ?", (user_id,))
+    cur.execute("SELECT account, qty FROM user_account WHERE user_id = ?", (user_id,))
     result = cur.fetchone()
-    account = result
+    account = result[0]
+    qty = result[1]
 
     client = TVCSClient()
 
@@ -39,13 +39,8 @@ async def get_signal(message: Message):
     exchange = "BINANCE"
     interval = "1h"
 
-    signals = []
-
     for pair in pairs:
         signal = client.get_signal(symbol=pair, exchange=exchange, interval=interval)
-        signals.append(signal)
-        with open('../outcome_data/signals.json', 'w') as f:
-            json.dump(signals, f, indent=4)
 
         try:
             if signal['recommendation'] == 'STRONG_BUY':
@@ -54,7 +49,7 @@ async def get_signal(message: Message):
                     symbol=signal['pair'],
                     side='Buy',
                     orderType='Market',
-                    qty=0.001,
+                    qty=qty,
                     marketunit='quoteCoin'
                 )
 
@@ -84,7 +79,7 @@ async def get_signal(message: Message):
                         symbol=signal['pair'],
                         side='Sell',
                         orderType='Market',
-                        qty=0.001,
+                        qty=qty,
                         marketunit='quoteCoin'
                     )
 
@@ -109,7 +104,7 @@ async def get_signal(message: Message):
                     symbol=signal['pair'],
                     side='Buy',
                     orderType='Market',
-                    qty=0.001,
+                    qty=qty,
                     marketunit='quoteCoin'
                 )
 
@@ -128,7 +123,7 @@ async def get_signal(message: Message):
                     await message.answer('Покупка не была произведена, произошла ошибка \U0000274C')
 
             elif signal['recommendation'] == 'SELL':
-                totalwalletbalance, coin_type, availablebalance = check_balance(account)
+                totalwalletbalance, availablebalance = check_balance(account)
                 if totalwalletbalance == availablebalance:
                     await message.answer('Нет доступных монет для продажи \U0000274C\U0001F4B0')
                 else:
@@ -137,7 +132,7 @@ async def get_signal(message: Message):
                         symbol=signal['pair'],
                         side='Sell',
                         orderType='Market',
-                        qty=0.001,
+                        qty=qty,
                         marketunit='quoteCoin'
                     )
 
