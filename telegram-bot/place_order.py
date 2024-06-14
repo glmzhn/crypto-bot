@@ -1,13 +1,19 @@
 import logging
+import os
+
+from dotenv import load_dotenv
 from pybit import exceptions
 from pybit.unified_trading import HTTP
+from aiogram.types import Message
 
 # | Logging |
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
+load_dotenv()
+
 # | API Keys |
-API_KEY = 'dqk8oFrkLOA7vFEy6N'
-SECRET_KEY = 'ghtWTidrREYAaOaZMUb3Sp4CIrkfNagRBm6N'
+API_KEY = os.getenv('API_KEY')
+SECRET_KEY = os.getenv('API_SECRET')
 
 # | Connecting to the API |
 client = HTTP(
@@ -57,7 +63,7 @@ def check_balance(accounttype):
 
 
 # | Function to cancel orders |
-def cancel_order(category, symbol, orderid):
+async def cancel_order(category, symbol, orderid, message: Message):
     try:
         c = client.cancel_order(
             category=category,  # | One of them: linear, inverse, option, spot |
@@ -68,6 +74,8 @@ def cancel_order(category, symbol, orderid):
     # | Exceptions messages |
     except exceptions.InvalidRequestError as e:
         print(e.status_code, e.message, sep=' | ')
+        if e.status_code == 110001:
+            await message.answer('Неверный id ордера, либо ордер уже исполнен и отмена невозможна')
     except exceptions.FailedRequestError as e:
         print("Request failed. Error:", e.status_code, e.message)
     except Exception as e:

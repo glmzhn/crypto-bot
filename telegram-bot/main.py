@@ -1,20 +1,16 @@
 import asyncio
 import sqlite3
+import time
+
 from aiogram import Bot, Dispatcher
 import os
-from pybit import exceptions
 from core.utils.statesform import StepsForm
 from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message,FSInputFile
-import logging
+from aiogram.types import Message, FSInputFile
 from place_order import check_balance, get_orders, cancel_order
 from signals_parse import get_signal
-
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - [%(levelname)s] - %(name)s - "
-                                               "(%(filename)s).%(funcName)s(%(lineno)d) - %(message)s")
 
 load_dotenv()
 
@@ -48,26 +44,21 @@ async def help_command(message: Message):
 
 
 @dp.message(Command('cancel_order'))
-async def cancel_order(message: Message, state: FSMContext):
+async def cancel_ord(message: Message, state: FSMContext):
     await message.answer('Пожалуйста, введите id ордера без лишних символов\U0001F194')
     await state.set_state(StepsForm.GET_ORDER)
 
 
 @dp.message(StepsForm.GET_ORDER)
 async def cancel(message: Message, state: FSMContext):
-    try:
-        order_id = message.text
-        if order_id:
-            order = cancel_order(category='linear', symbol='BTCUSDT', orderid=order_id)
-            if order['retMsg'] == 'OK':
-                await message.answer(f'Заказ с id - {order_id} успешно отменен \U0001F4E8')
-            elif order['retMsg'] != 'OK':
-                await message.answer('Не удалось отменить заказ, попробуйте снова \U0001F504')
-    except exceptions.InvalidRequestError as e:
-        if e.status_code == 10001:
-            await message.answer('Неверный id ордера!\n'
-                                 'Либо ордер уже исполнен и отмена невозможна')
-        await state.clear()
+    order_id = message.text
+    if order_id:
+        order = await cancel_order(category='linear', symbol='BTCUSDT', orderid=order_id, message=message)
+        if order['retMsg'] == 'OK':
+            await message.answer(f'Заказ с id - {order_id} успешно отменен \U0001F4E8')
+        elif order['retMsg'] != 'OK':
+            await message.answer('Не удалось отменить заказ, попробуйте снова \U0001F504')
+    await state.clear()
 
 
 @dp.message(Command('set_account'))
@@ -111,6 +102,8 @@ async def check_wallet(message: Message):
             totalwalletbalance, availablebalance = check_balance(account)
             await message.answer(f'Ваш баланс: {totalwalletbalance} | USDT \U0001F4B3\n'
                                  f'Доступные средства: {availablebalance} \U0001F4B8')
+        else:
+            await message.answer('Введите верный тип аккаунта')
     else:
         await message.answer('В базе данных нет вашего id, вызовите команду set_account и повторите попытку \U0001F504')
 
@@ -172,12 +165,6 @@ async def get_all_orders(message: Message):
     os.remove('orders.txt')
 
 
-@dp.message(Command('buy_or_sell'))
-async def buy_or_sell(message: Message):
-    await message.answer('Анализирую рекомендации \U0001F50D')
-    await get_signal(message)
-
-
 async def main():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_account (
@@ -199,3 +186,8 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Code's Exited")
+
+    while True:
+        async def buy_or_sell(message: Message):
+            await get_signal(message)
+            time.sleep(60 * 15)
