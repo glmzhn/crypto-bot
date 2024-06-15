@@ -1,6 +1,6 @@
 import datetime
 import sqlite3
-from aiogram.types import Message
+from aiogram import Bot
 from pybit import exceptions
 from pybit.unified_trading import HTTP
 from place_order import get_orders
@@ -25,8 +25,8 @@ conn = sqlite3.connect('accounts.db')
 cur = conn.cursor()
 
 
-async def get_signal(message: Message):
-    user_id = message.from_user.id
+async def get_signal(bot: Bot):
+    user_id = '962394481'
     cur.execute("SELECT account, qty FROM user_account WHERE user_id = ?", (user_id,))
     result = cur.fetchone()
     account = result[0]
@@ -60,19 +60,20 @@ async def get_signal(message: Message):
                     dt_object = datetime.datetime.fromtimestamp(time)
                     order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                     if order_status['result']['list']['orderStatus'] == 'Filled':
-                        await message.answer(f"Покупка успешно произведена! \U00002705\n"
-                                             f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                             f"Время: {dt_object} \U0001F550\n"
-                                             f"Статус заказа: Исполнен \U0001F4E8")
+                        await bot.send_message(text=f"Покупка успешно произведена! \U00002705\n"
+                                               f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                               f"Время: {dt_object} \U0001F550\n"
+                                               f"Статус заказа: Исполнен \U0001F4E8", chat_id=user_id)
                 else:
-                    await message.answer('Покупка не была произведена, произошла ошибка \U0000274C')
+                    await bot.send_message(text='Покупка не была произведена, '
+                                                'произошла ошибка \U0000274C', chat_id=user_id)
 
             elif signal['recommendation'] == 'STRONG_SELL':
 
                 totalwalletbalance, availablebalance = check_balance(account)
 
                 if totalwalletbalance == availablebalance:
-                    await message.answer('Нет доступных монет для продажи \U0000274C\U0001F4B0')
+                    await bot.send_message(text='Нет доступных монет для продажи \U0000274C\U0001F4B0', chat_id=user_id)
                 else:
                     r = app.place_order(
                         category='linear',
@@ -88,15 +89,17 @@ async def get_signal(message: Message):
                         dt_object = datetime.datetime.fromtimestamp(time)
                         order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                         if order_status['result']['list']['orderStatus'] == 'Filled':
-                            await message.answer(f"Продажа успешно произведена! \U00002705\n"
-                                                 f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                                 f"Время: {dt_object} \U0001F550\n"
-                                                 f"Статус заказа: Исполнен \U0001F4E8")
+                            await bot.send_message(text=f"Продажа успешно произведена! \U00002705\n"
+                                                   f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                                   f"Время: {dt_object} \U0001F550\n"
+                                                   f"Статус заказа: Исполнен \U0001F4E8", chat_id=user_id)
                     else:
-                        await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
+                        await bot.send_message(text='Продажа не была произведена, '
+                                                    'произошла ошибка \U0000274C', chat_id=user_id)
 
             elif signal['recommendation'] == 'NEUTRAL':
-                await message.answer('Рекомендация была нейтральной, покупка не производится \U000026D4')
+                await bot.send_message(text='Рекомендация была нейтральной, '
+                                            'покупка не производится \U000026D4', chat_id=user_id)
 
             elif signal['recommendation'] == 'BUY':
                 r = app.place_order(
@@ -115,17 +118,18 @@ async def get_signal(message: Message):
                     dt_object = datetime.datetime.fromtimestamp(time)
                     order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                     if order_status['result']['list']['orderStatus'] == 'Filled':
-                        await message.answer(f"Покупка успешно произведена! \U00002705\n"
-                                             f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                             f"Время: {dt_object} \U0001F550\n"
-                                             f"Статус заказа: Исполнен \U0001F4E8")
+                        await bot.send_message(text=f"Покупка успешно произведена! \U00002705\n"
+                                               f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                               f"Время: {dt_object} \U0001F550\n"
+                                               f"Статус заказа: Исполнен \U0001F4E8", chat_id=user_id)
                 else:
-                    await message.answer('Покупка не была произведена, произошла ошибка \U0000274C')
+                    await bot.send_message(text='Покупка не была произведена, '
+                                                'произошла ошибка \U0000274C', chat_id=user_id)
 
             elif signal['recommendation'] == 'SELL':
                 totalwalletbalance, availablebalance = check_balance(account)
                 if totalwalletbalance == availablebalance:
-                    await message.answer('Нет доступных монет для продажи \U0000274C\U0001F4B0')
+                    await bot.send_message(text='Нет доступных монет для продажи \U0000274C\U0001F4B0', chat_id=user_id)
                 else:
                     r = app.place_order(
                         category='linear',
@@ -141,18 +145,20 @@ async def get_signal(message: Message):
                         dt_object = datetime.datetime.fromtimestamp(time)
                         order_status = get_orders('linear', 'BTCUSDT', orderid=r['result']['orderId'])
                         if order_status['result']['list']['orderStatus'] == 'Filled':
-                            await message.answer(f"Продажа успешно произведена! \U00002705\n"
-                                                 f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
-                                                 f"Время: {dt_object} \U0001F550\n"
-                                                 f"Статус заказа: Исполнен \U0001F4E8")
+                            await bot.send_message(text=f"Продажа успешно произведена! \U00002705\n"
+                                                   f"ID Ордера: {r['result']['orderId']} \U0001F4DD\n"
+                                                   f"Время: {dt_object} \U0001F550\n"
+                                                   f"Статус заказа: Исполнен \U0001F4E8", chat_id=user_id)
                     else:
-                        await message.answer('Продажа не была произведена, произошла ошибка \U0000274C')
+                        await bot.send_message(text='Продажа не была произведена, '
+                                                    'произошла ошибка \U0000274C', chat_id=user_id)
 
         # | Exceptions messages |
         except exceptions.InvalidRequestError as e:
             print(e.status_code, e.message, sep=' | ')
             if e.status_code == 110007:
-                await message.answer('Недостаточно свободных средств для покупки! \U0000274C\U0001F4B0')
+                await bot.send_message(text='Недостаточно свободных '
+                                            'средств для покупки! \U0000274C\U0001F4B0', chat_id=user_id)
         except exceptions.FailedRequestError as e:
             print("Request failed. Error:", e.status_code, e.message)
         except Exception as e:

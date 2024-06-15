@@ -1,7 +1,6 @@
 import asyncio
 import sqlite3
 import time
-
 from aiogram import Bot, Dispatcher
 import os
 from core.utils.statesform import StepsForm
@@ -75,17 +74,22 @@ async def set_account(message: Message, state: FSMContext):
 async def get_type(message: Message, state: FSMContext):
     account_qty = message.text.split(',')
     account = account_qty[0]
-    qty = account_qty[1]
+    qty = float(account_qty[1])
 
-    user_id = message.from_user.id
+    if qty < 0.001:
+        await message.answer('Количество монет должно быть не менее 0.001!')
 
-    cur.execute(
-        "INSERT OR REPLACE INTO user_account (user_id, account, qty) VALUES (?, ?, ?)",
-        (user_id, account, qty)
-    )
+    elif qty >= 0.001:
+        user_id = message.from_user.id
 
-    conn.commit()
-    await message.answer('Благодарю за предоставленные данные! \U0001F60A')
+        cur.execute(
+            "INSERT OR REPLACE INTO user_account (user_id, account, qty) VALUES (?, ?, ?)",
+            (user_id, account, qty)
+        )
+
+        conn.commit()
+        await message.answer('Благодарю за предоставленные данные! \U0001F60A')
+
     await state.clear()
 
 
@@ -159,10 +163,16 @@ async def get_all_orders(message: Message):
                                 f" - Количество купленной монеты: {order['qty']} \n"
                                 f" - Статус ордера: Не исполнен\n"
                                 f"\n")
-    file = FSInputFile(path='C:/Users/galym/projects/crypto-bot/telegram-bot/orders.txt', filename='orders.txt')
+    file = FSInputFile(path='../orders.txt', filename='orders.txt')
     await message.answer_document(document=file, caption='Список всех ордеров')
 
     os.remove('orders.txt')
+
+
+async def buy_or_sell():
+    while True:
+        await get_signal(bot)
+        time.sleep(3 * 60)
 
 
 async def main():
@@ -176,6 +186,8 @@ async def main():
 
     conn.commit()
 
+    await buy_or_sell()
+
     await dp.start_polling(bot)
     dp.message.register(get_type, StepsForm.GET_TYPE)
     dp.message.register(get_order_status, StepsForm.GET_ID)
@@ -186,8 +198,3 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Code's Exited")
-
-    while True:
-        async def buy_or_sell(message: Message):
-            await get_signal(message)
-            time.sleep(60 * 15)

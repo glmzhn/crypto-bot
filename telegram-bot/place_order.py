@@ -1,13 +1,8 @@
-import logging
 import os
-
 from dotenv import load_dotenv
 from pybit import exceptions
 from pybit.unified_trading import HTTP
 from aiogram.types import Message
-
-# | Logging |
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 load_dotenv()
 
