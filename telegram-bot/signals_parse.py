@@ -1,4 +1,5 @@
 import datetime
+import os
 import sqlite3
 from aiogram import Bot
 from pybit import exceptions
@@ -6,15 +7,18 @@ from pybit.unified_trading import HTTP
 from place_order import get_orders
 from client import TVCSClient
 from place_order import check_balance
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # | API Keys |
-API_KEY = 'dqk8oFrkLOA7vFEy6N'
-SECRET_KEY = 'ghtWTidrREYAaOaZMUb3Sp4CIrkfNagRBm6N'
+API_KEY = os.environ['API_KEY']
+SECRET_KEY = os.environ['API_SECRET']
 
 # | Connecting to the API |
 app = HTTP(
         recv_window=60000,
-        testnet=True,
         api_key=API_KEY,
         api_secret=SECRET_KEY
     )
