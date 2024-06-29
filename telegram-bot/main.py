@@ -63,7 +63,7 @@ async def cancel(message: Message, state: FSMContext):
 async def set_account(message: Message, state: FSMContext):
     await message.answer("Введите тип аккаунта и количество монеты для покупки(не менее 0.001) \U0001F4B3\n"
                          "\n"
-                         "Пример: UNIFIED \U0000270F\n"
+                         "Пример: UNIFIED,0.001 \U0000270F\n"
                          "\n"
                          "БЕЗ ПРОБЕЛОВ! \U0000274C")
     await state.set_state(StepsForm.GET_TYPE)
