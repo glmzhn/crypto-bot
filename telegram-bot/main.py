@@ -1,6 +1,5 @@
 import asyncio
 import sqlite3
-import time
 from aiogram import Bot, Dispatcher
 import os
 from core.utils.statesform import StepsForm
@@ -169,10 +168,11 @@ async def get_all_orders(message: Message):
     os.remove('orders.txt')
 
 
-async def buy_or_sell():
+@dp.message(Command('start_trading'))
+async def start_trading(message: Message):
     while True:
         await get_signal(bot)
-        time.sleep(3 * 60)
+        await asyncio.sleep(180)
 
 
 async def main():
@@ -185,8 +185,6 @@ async def main():
     """)
 
     conn.commit()
-
-    await buy_or_sell()
 
     await dp.start_polling(bot)
     dp.message.register(get_type, StepsForm.GET_TYPE)

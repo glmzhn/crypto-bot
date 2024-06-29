@@ -20,7 +20,8 @@ SECRET_KEY = os.environ['API_SECRET']
 app = HTTP(
         recv_window=60000,
         api_key=API_KEY,
-        api_secret=SECRET_KEY
+        api_secret=SECRET_KEY,
+        testnet=True
     )
 
 
